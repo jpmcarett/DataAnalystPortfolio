@@ -1,0 +1,181 @@
+
+----------------------------------------Just to visualize the dataset--------------------------------------------
+-- Explore CovidDeaths dataset
+-- Display all columns from CovidDeathsCSV table, sorted by the third and fourth columns
+Select *
+from Test.dbo.CovidDeathsCSV
+order by 3,4;
+
+----------------------------------------Just to visualize the dataset--------------------------------------------
+-- Explore CovidVaccinations dataset
+-- Display all columns from CovidVaccinationsCSV table, sorted by the third and fourth columns
+
+Select *
+from Test.dbo.CovidVaccinationsCSV
+order by 3,4;
+
+-------------------------------------------Visualization query---------------------------------------------------
+-- Visualization query for CovidDeaths dataset
+-- Display specific columns (location, date, total_cases, new_cases, total_deaths, population)
+-- from CovidDeathsCSV table, ordered by location and date
+Select  location,date,total_cases, new_Cases,total_deaths,population
+from Test.dbo.CovidDeathsCSV
+order by 1,2;
+
+--------------------------------------Extrac Total Cases Vs Total Deaths-----------------------------------------
+
+-- Display location, date, total_cases, total_deaths, and DeathPercentage
+-- DeathPercentage is calculated as (total_deaths / total_cases) * 100
+-- Filter only rows where location contains 'states'
+Select  location,date,total_cases,total_deaths, (cast(total_deaths as float)/cast(total_cases as float))*100  as DeathPercentage
+from Test.dbo.CovidDeathsCSV
+where location like '%states%'
+order by 1,2;
+
+----------------------------------------Total cases vs Population------------------------------------------------
+
+-- Display location, date, population, total_cases, and PercentPopulation
+-- PercentPopulation is calculated as (total_cases / population) * 100
+-- Results are ordered by location and date
+Select location, date, population, total_cases, (cast(total_cases as float)/cast(population as float))*100  as PercentPopulation
+from Test.dbo.CovidDeathsCSV
+order by 1,2;
+
+-------------------------------------- Country with highest infection--------------------------------------------
+
+
+-- Display location, population, HighestInfection (max total_cases), and PercentPopulation
+-- PercentPopulation is calculated as (max total_cases / population) * 100
+-- Results are grouped by location and population, ordered by PercentPopulation descending
+
+Select location,population,MAX(total_cases) as Highestinfection, MAX(cast(total_cases as float)/cast(population as float))*100  as PercentPopulation
+from Test.dbo.CovidDeathsCSV
+--where location like '%states%'
+group by Location,Population
+order by PercentPopulation desc;
+
+-------------------------------Countries with Highest Death Count per Population---------------------------------
+
+-- Display Location and the Maximum Total Death Count for each country
+-- Exclude rows where the continent is null
+-- Results are grouped by Location and ordered by TotalDeathCount in descending order
+Select Location, MAX(Total_deaths) as TotalDeathCount
+from Test.dbo.CovidDeathsCSV
+--Where location like '%states%'
+Where continent is not null 
+Group by Location
+order by TotalDeathCount desc;
+
+
+
+-----------------------------------BREAKING THINGS DOWN BY CONTINENT---------------------------------------------
+
+-- Showing continents with the Highest Death Count per Population
+-- Display continent and the Maximum Total Death Count for each continent
+-- Exclude rows where the continent is null
+-- Results are grouped by continent and ordered by TotalDeathCount in descending order
+
+Select continent, MAX(total_deaths) as TotalDeathCount
+from Test.dbo.CovidDeathsCSV
+--Where location like '%states%'
+Where continent is not null 
+Group by continent
+order by TotalDeathCount desc
+
+
+
+-------------------------------------- GLOBAL NUMBERS-------------------------------------------------------------
+-- Display the sum of new_cases, sum of new_deaths, and the DeathPercentage
+-- DeathPercentage is calculated as (sum of new_deaths / sum of new_cases) * 100
+-- Exclude rows where the continent is null
+-- Results are ordered by total_cases and total_deaths
+
+Select SUM(new_cases) as total_cases, SUM(new_deaths) as total_deaths, SUM(cast(new_deaths as float))/SUM(cast(New_Cases as float))*100 as DeathPercentage
+from Test.dbo.CovidDeathsCSV
+--Where location like '%states%'
+where continent is not null 
+--Group By date
+order by 1,2
+
+
+
+---------------------------------- Total Population vs Vaccinations-----------------------------------------------
+
+-- Shows the Percentage of Population that has received at least one Covid Vaccine
+-- Display continent, location, date, rounded population, new_vaccinations, and RollingPeopleVaccinated
+-- RollingPeopleVaccinated is the cumulative sum of new_vaccinations partitioned by location and ordered by location and date
+-- Exclude rows where the continent is null
+-- Results are ordered by location and date
+
+Select dea.continent, dea.location, dea.date, round(dea.population,2), vac.new_vaccinations
+	, SUM (vac.new_vaccinations ) OVER (Partition by dea.Location Order by dea.location, dea.Date ROWS UNBOUNDED PRECEDING)
+	as RollingPeopleVaccinated
+from Test.dbo.CovidDeathsCSV dea
+Join Test.dbo.CovidVaccinationsCSV vac
+	On dea.location = vac.location
+	and dea.date = vac.date
+where dea.continent is not null
+order by 2,3;
+
+
+-- Using CTE to perform Calculation on Partition By in previous query
+-- Define a Common Table Expression (CTE) named PopvsVac
+-- Calculate RollingPeopleVaccinated using SUM() over Partition by location ordered by location and date
+-- Display continent, location, date, population, new_vaccinations, and RollingPeopleVaccinated in the CTE
+
+With PopvsVac (Continent, Location, Date, Population, New_Vaccinations, RollingPeopleVaccinated)
+as
+(
+Select dea.continent, dea.location, dea.date, dea.population, vac.new_vaccinations
+, SUM(vac.new_vaccinations) OVER (Partition by dea.Location Order by dea.location, dea.Date ROWS UNBOUNDED PRECEDING)
+	as RollingPeopleVaccinated
+--, (RollingPeopleVaccinated/population)*100
+from Test.dbo.CovidDeathsCSV dea
+Join Test.dbo.CovidVaccinationsCSV vac
+	On dea.location = vac.location
+	and dea.date = vac.date
+where dea.continent is not null 
+--order by 2,3
+)
+Select *, (RollingPeopleVaccinated/Population)*100
+From PopvsVac
+
+
+
+-- Using Temp Table to perform Calculation on Partition By in previous query
+
+DROP Table if exists #PercentPopulationVaccinated
+Create Table #PercentPopulationVaccinated
+(
+Continent nvarchar(255),
+Location nvarchar(255),
+Date datetime,
+Population numeric,
+New_vaccinations numeric,
+RollingPeopleVaccinated numeric
+)
+
+
+Insert into #PercentPopulationVaccinated
+Select dea.continent, dea.location, dea.date, dea.population, vac.new_vaccinations
+, SUM(vac.new_vaccinations) OVER (Partition by dea.Location Order by dea.location, dea.Date ROWS UNBOUNDED PRECEDING)
+	as RollingPeopleVaccinated
+--, (RollingPeopleVaccinated/population)*100
+From Test.dbo.CovidDeathsCSV dea
+Join Test.dbo.CovidVaccinationsCSV vac
+	On dea.location = vac.location
+	and dea.date = vac.date
+--where dea.continent is not null 
+--order by 2,3
+
+Select *, (RollingPeopleVaccinated/Population)*100
+From #PercentPopulationVaccinated
+
+
+
+
+
+
+
+
+
