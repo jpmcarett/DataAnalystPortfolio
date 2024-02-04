@@ -1,0 +1,208 @@
+-- Visualization of Movie Dataset
+SELECT *
+from Second_Project.dbo.movies;
+
+
+------------------------------------- CHECK HOW MANY MOVIES DO WE HAVE MORE THAT ONCES------------------------------------------------------
+-- Check for Duplicate Movies
+-- Retrieve all columns from the 'movies' table in the 'Second_Project' database.
+-- Order the results by the 'MOVIES' column to identify potential duplicates.
+
+SELECT*
+FROM Second_Project.dbo.movies
+ORDER BY MOVIES; 
+
+------------------------------- UNIQUE MOVIE RECORDS(FROM 9999 REGISTER TO 6428)---------------------------------------------------
+
+-- 
+-- Retrieve unique movie records by selecting the maximum values of certain columns (Rating, Votes, Genre, Stars)
+-- This query is designed to consolidate information for each movie, reducing multiple entries to a single record.
+-- The result provides a summary of key details such as maximum rating, maximum votes, genre, and stars.
+
+SELECT
+    Movies,
+    MAX(Rating) AS MaxRating,
+    MAX(Votes) AS MaxVotes,
+    MAX(Genre) AS Genre,
+    MAX(Stars) AS Stars
+FROM Second_Project.dbo.movies
+GROUP BY Movies;
+
+---------------------------------------------SEPARATED STARS FROM DIRECTORS----------------------------------------------------------------
+-- Extracting  Directo(s) from Stars Information
+SELECT STARS
+FROM Second_Project.dbo.movies;
+
+--Visualization of Separated Stars from Directors
+SELECT STARS,
+    CASE
+        WHEN STARS LIKE '%Director%' AND CHARINDEX(':', STARS) > 0 AND CHARINDEX('|', STARS) > 0
+            THEN LEFT(SUBSTRING(STARS, CHARINDEX(':', STARS) + 1, CHARINDEX('|', STARS) - CHARINDEX(':', STARS) - 1), 255)
+        ELSE 'No Director'
+    END
+FROM Second_Project.dbo.movies
+WHERE STARS LIKE '%Director%' AND CHARINDEX(':', STARS) > 0 AND CHARINDEX('|', STARS) > 0;
+
+-- Create New Column for Director Name
+
+ALTER TABLE Second_Project.dbo.movies
+ADD Director_name VARCHAR(255);
+-- Load Director Name Information
+-- If the 'STARS' column contains 'Director', extract the director's name between ':' and '|'.
+-- This update enhances the dataset by providing a dedicated column for director names.
+
+UPDATE Second_Project.dbo.movies
+SET Director_name =
+    CASE
+        WHEN STARS LIKE '%Director%' AND CHARINDEX(':', STARS) > 0 AND CHARINDEX('|', STARS) > 0
+            THEN LEFT(SUBSTRING(STARS, CHARINDEX(':', STARS) + 1, CHARINDEX('|', STARS) - CHARINDEX(':', STARS) - 1), 255)
+        ELSE 'No Director'
+    END
+WHERE STARS LIKE '%Director%' AND CHARINDEX(':', STARS) > 0 AND CHARINDEX('|', STARS) > 0;
+
+
+------------------------------------------------------------------------------------------------------------------------------------------
+-- In Progress: Grouping by Movies and Combining Stars Names
+
+--Just the stars
+SELECT  movies,SUBSTRING(STARS, CHARINDEX('Stars:', STARS) + LEN('Stars: ') + 1, LEN(STARS)) AS ExtractedStarsInfo
+FROM Second_Project.dbo.movies
+ORDER BY MOVIES;
+
+--------------------------------------------------------------------------------------------------------------------------------------------
+-- Create a CTE (Common Table Expression) for Ranking Movies
+-- The 'RankedMovies' CTE is created to assign a row number to each record within each movie group based on descending rating.
+-- This CTE utilizes the ROW_NUMBER() window function partitioned by 'Movies' and ordered by 'Rating' in descending order.
+
+WITH RankedMovies AS (
+    SELECT
+        Movies,
+        Rating,
+        votes,
+        ROW_NUMBER() OVER (PARTITION BY Movies ORDER BY Rating DESC) AS RowNum
+    FROM Second_Project.dbo.movies
+)
+SELECT
+    Movies,
+    Rating,
+    votes,
+    CASE
+        WHEN Votes IS NOT NULL AND Rating IS NOT NULL
+            THEN (VOTES * RATING) / (VOTES + 100)
+        ELSE NULL
+    END AS WeightedAverage
+FROM RankedMovies
+WHERE RowNum = 1
+ORDER BY WeightedAverage DESC;
+
+
+
+
+----------------------------------------Start year---------------------------------------------------------------
+
+SELECT MOVIES,YEAR,GENRE,RATING,ONE_LINE
+FROM Second_Project.dbo.movies;
+-- Creation of New Column 'START_YEAR'
+ALTER TABLE Second_Project.dbo.movies
+ADD START_YEAR VARCHAR(255);
+
+-- Extracting Start Year Information
+-- Extract the starting year information from the 'YEAR' column for each movie.
+
+SELECT SUBSTRING(YEAR, PATINDEX('%[0-9]%', YEAR), 4)
+FROM Second_Project.dbo.movies
+WHERE PATINDEX('%[0-9]%', YEAR) > 1;
+-- Updating 'START_YEAR' Column
+-- Update the 'START_YEAR' column with the extracted starting year information.
+-- This process assumes that the year in each record represents the beginning time for the respective movie.
+
+UPDATE Second_Project.dbo.movies
+SET START_YEAR=SUBSTRING(YEAR, PATINDEX('%[0-9]%', YEAR), 4)
+FROM Second_Project.dbo.movies
+WHERE PATINDEX('%[0-9]%', YEAR) > 1;
+
+--CHECK POINT 
+
+SELECT *
+from Second_Project.dbo.movies;
+------------------------------------------------------------------------------------------------------------------
+-- Separating Genre Counts
+-- Count the occurrences of movies within specific genres and create separate counts for each genre.
+-- This query utilizes conditional COUNT statements for various genres, including Comedy, Action, Horror, Thriller, Animation,
+-- Adventure, Crime, Drama, Romance, and Mystery. Each count is presented as a separate column.
+
+SELECT
+    COUNT(CASE WHEN GENRE LIKE '%Comedy%' THEN 1 ELSE NULL END) AS Comedy_count,
+	COUNT(CASE WHEN GENRE LIKE '%Action%' THEN 1 ELSE NULL END) AS Action_count,
+	COUNT(CASE WHEN GENRE LIKE '%Horror%' THEN 1 ELSE NULL END) AS Horrorn_count,
+	COUNT(CASE WHEN GENRE LIKE '%Thriller%' THEN 1 ELSE NULL END) AS Thriller_count,
+	COUNT(CASE WHEN GENRE LIKE '%Animation%' THEN 1 ELSE NULL END) AS Animation_count,
+	COUNT(CASE WHEN GENRE LIKE '%Adventure%' THEN 1 ELSE NULL END) AS Adventure_count,
+	COUNT(CASE WHEN GENRE LIKE '%Crime%' THEN 1 ELSE NULL END) AS Crime_count,
+	COUNT(CASE WHEN GENRE LIKE '%Drama%' THEN 1 ELSE NULL END) AS Drama_count,
+	COUNT(CASE WHEN GENRE LIKE '%Romance%' THEN 1 ELSE NULL END) AS Romance_count,
+	COUNT(CASE WHEN GENRE LIKE '%Mystery%' THEN 1 ELSE NULL END) AS Mystery_count
+FROM Second_Project.dbo.movies;
+	
+
+-- Average Rating per Genre with Movie Count
+-- Calculate the average rating and count of movies for each genre.
+-- This query groups movies by genre, computes the average rating, and provides the movie count for each genre.
+
+SELECT
+    Genre,
+    AVG(CAST(Rating AS FLOAT)) AS AverageRating,
+    COUNT(*) AS MovieCount
+FROM Second_Project.dbo.movies
+GROUP BY Genre
+ORDER BY  MovieCount DESC,AverageRating ;
+
+-- Check all the Genre: Average Rating and Movie Count
+-- Calculate the average rating and count of movies specifically per genre.
+--COMEDY
+SELECT
+    'All Genres with Comedy' AS GENRE,
+    AVG(CAST(Rating AS FLOAT)) AS AverageRating,
+    COUNT(*) AS MovieCount
+FROM (
+    SELECT GENRE, Rating
+    FROM Second_Project.dbo.movies
+    WHERE GENRE LIKE '%Comedy%'
+) AS FilteredGenres;
+
+--DRAMA
+
+SELECT
+    'All Genres with Drama' AS GENRE,
+    AVG(CAST(Rating AS FLOAT)) AS AverageRating,
+    COUNT(*) AS MovieCount
+FROM (
+    SELECT GENRE, Rating
+    FROM Second_Project.dbo.movies
+    WHERE GENRE LIKE '%Drama%'
+) AS FilteredGenres;
+
+
+-- ADVENTURE
+
+SELECT
+    'All Genres with Adventure' AS GENRE,
+    AVG(CAST(Rating AS FLOAT)) AS AverageRating,
+    COUNT(*) AS MovieCount
+FROM (
+    SELECT GENRE, Rating
+    FROM Second_Project.dbo.movies
+    WHERE GENRE LIKE '%Adventure%'
+) AS FilteredGenres;
+
+--ACTION
+
+SELECT
+    'All Genres with Action' AS GENRE,
+    AVG(CAST(Rating AS FLOAT)) AS AverageRating,
+    COUNT(*) AS MovieCount
+FROM (
+    SELECT GENRE, Rating
+    FROM Second_Project.dbo.movies
+    WHERE GENRE LIKE '%Action%'
+) AS FilteredGenres;
