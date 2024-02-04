@@ -1,0 +1,58 @@
+--Querys for Tableau 
+-----------------------------------------------------------------------------------------------------------------
+--Total_cases, Total_deaths, deathPercentage
+-- DeathPercentage is calculated as (sum of new_deaths / sum of new_cases) * 100
+-- Exclude rows where the continent is null
+-- Results are ordered by total_cases and total_deaths
+
+Select SUM(new_cases) as total_cases, SUM(new_deaths) as total_deaths, SUM(cast(new_deaths as float))/SUM(cast(New_Cases as float))*100 as DeathPercentage
+from Test.dbo.CovidDeathsCSV
+--Where location like '%states%'
+where continent is not null 
+--Group By date
+order by 1,2
+-----------------------------------------------------------------------------------------------------------------
+--Location per group of contries, Total_deaths_count
+-- Calculate the sum of new_deaths for each location within groups of countries (excluding specific entities)
+-- Exclude rows where the continent is null and the location contains 'World,' 'European Union,' or 'International'
+-- Results are grouped by location and ordered by total_deaths_count in descending order
+Select location, SUM(new_deaths) as total_deaths_count
+from Test.dbo.CovidDeathsCSV
+where continent is null 
+	AND location NOT LIKE '%World%' 
+    AND location NOT LIKE '%European Union%' 
+    AND location NOT LIKE '%International%'
+Group By location
+order by total_deaths_count desc
+------------------------------------------------------------------------------------------------------------------
+--Total_cases per of contries, Total_deaths, deathPercentage
+-- Calculate the sum of new_deaths for each location within groups of countries
+-- Exclude rows where the continent is null or the location is 'World,' 'European Union,' or 'International'
+-- Results are grouped by location and ordered by total_deaths_count
+Select location, SUM(new_deaths) as total_deaths_count
+from Test.dbo.CovidDeathsCSV
+where continent is not null 
+and location not in ('World,European Union','International')
+Group By location
+order by total_deaths_count
+------------------------------------------------------------------------------------------------------------------
+
+-- Display location, population, the highest infection (max total_cases), and the percentage of population infected
+-- Population_Infected is calculated as (max total_cases / population) * 100
+-- Results are grouped by location and population, ordered by Population_Infected in descending order
+Select location,population,MAX(total_cases) as Highest_Infection,max((total_cases/population))*100 as Population_Infected
+from Test.dbo.CovidDeathsCSV
+group by location,population
+order by Population_Infected desc;
+-----------------------------------------------------------------------------------------------------------------
+-- Location, Population, Date, Highest_Infection, Population_Infected
+-- Display location, population, date, the highest infection (max total_cases), and the percentage of population infected
+-- Population_Infected is calculated as (max total_cases / population) * 100
+-- Results are grouped by location, population, and date, ordered by Population_Infected in descending order
+
+Select location,population,date,MAX(total_cases) as Highest_Infection,max((total_cases/population))*100 as Population_Infected
+from Test.dbo.CovidDeathsCSV
+group by location,population,date
+order by Population_Infected desc;
+
+
