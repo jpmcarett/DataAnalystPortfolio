@@ -1,0 +1,20 @@
+Housing Project - Nashville Dataset
+
+Overview
+This project focuses on cleaning and organizing a housing dataset for Nashville. The dataset initially posed challenges due to inconsistencies, 
+missing values, and redundant information. The goal was to transform the raw data into a clean and structured format ready for analysis and further use.
+
+Data Cleaning Process
+
+Address Standardization
+The property addresses in the initial dataset exhibited inconsistencies. Address standardization techniques were applied to break down the addresses into individual components such as Address, City, and State.
+
+Owner Address Parsing
+The OwnerAddress field presented challenges, containing multiple values separated by commas. Parsing techniques were applied to split the OwnerAddress into individual components, including Address, City, and State.
+
+Removing Duplicates
+To ensure data accuracy, duplicate records were identified and removed based on specific columns such as ParcelID, PropertyAddress, SalePrice, SaleDate, and LegalReference.
+
+Conclusion
+This data cleaning process resulted in a more organized and reliable dataset for housing information in Nashville. The cleaned data is now suitable for various analytical tasks and can serve as a foundation for further exploration and insights.
+
