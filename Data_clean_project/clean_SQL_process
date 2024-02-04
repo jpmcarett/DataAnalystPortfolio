@@ -1,0 +1,145 @@
+--check the dataset
+Select *
+from project2.dbo.Dataset;
+
+
+ --------------------------------------------------------------------------------------------------------------------------
+
+-- Populate Null Property Addresses
+-- Aimed at identifying and addressing missing property addresses for further data completeness.
+
+Select *
+from project2.dbo.Dataset
+where PropertyAddress is null;
+
+-- Visualization of PropertyAddress Issues
+-- Joining the dataset (DB1) with itself (DB2) based on ParcelID, excluding identical records (DB1.UniqueID != DB2.UniqueID).
+-- The query highlights instances where PropertyAddress is null in DB1.
+
+Select DB1.ParcelID, DB1.PropertyAddress, DB2.ParcelID,DB2.PropertyAddress, isnull(DB1.PropertyAddress,db2.PropertyAddress)
+from project2.dbo.Dataset DB1
+join project2.dbo.Dataset DB2
+	on DB1.ParcelID= DB2.ParcelID
+	and DB1.UniqueID != DB2.UniqueID
+where DB1.PropertyAddress is null;
+
+--Update the table
+Update DB1
+set PropertyAddress = isnull(DB1.PropertyAddress,db2.PropertyAddress)
+from project2.dbo.Dataset DB1
+join project2.dbo.Dataset DB2
+	on DB1.ParcelID= DB2.ParcelID
+	and DB1.UniqueID != DB2.UniqueID
+where DB1.PropertyAddress is null;
+
+
+--------------------------------------------------------------------------------------------------------------------------
+
+-- Extracting Address Components and Visualizing Property Address Issues
+-- Breaking out Address into Individual Columns (Address, City, State)
+-- The following query extracts components like Address, City, and State from the PropertyAddress field.
+
+
+Select PropertyAddress
+from project2.dbo.Dataset
+
+-- The following query separates the Address part from the PropertyAddress.
+
+Select
+Substring(propertyaddress,1,charindex(',',propertyaddress)-1) as Address,
+Substring(propertyaddress,charindex(',',propertyaddress)+1,len(PropertyAddress)) as Address
+from project2.dbo.Dataset;
+
+
+-- Adding a new column for the split Address
+-- This alters the table to include a new column called PropertySplitAddress.
+
+
+alter table project2.dbo.Dataset
+add PropertySplitAddress Nvarchar(255)
+
+-- Updating the new column with the extracted Address
+-- This update sets the PropertySplitAddress column with the separated Address part.
+
+Update project2.dbo.Dataset
+set PropertySplitAddress = Substring(propertyaddress,1,charindex(',',propertyaddress)-1)
+
+-- Adding a new column for the split City
+-- This alters the table to include a new column called PropertySplitCity.
+
+alter table project2.dbo.Dataset
+add PropertySplitCity Nvarchar(255)
+
+-- Updating the new column with the extracted City
+-- This update sets the PropertySplitCity column with the separated City part.
+
+
+Update project2.dbo.Dataset
+set PropertySplitCity = Substring(propertyaddress,charindex(',',propertyaddress)+1,len(PropertyAddress))
+
+
+Select *
+from project2.dbo.Dataset
+
+-- Identifying the Second Issue related to OwnerAddress
+-- This query selects the OwnerAddress column to investigate the second issue.
+
+Select OwnerAddress
+from project2.dbo.Dataset
+
+-- Extracting individual components from OwnerAddress
+-- This query uses PARSENAME and REPLACE functions to split OwnerAddress into Address, City, and State.
+
+
+Select
+PARSENAME(REPLACE(OwnerAddress, ',', '.') , 3)
+,PARSENAME(REPLACE(OwnerAddress, ',', '.') , 2)
+,PARSENAME(REPLACE(OwnerAddress, ',', '.') , 1)
+From project2.dbo.Dataset
+
+-- Adding a new column for the split OwnerAddress components
+-- This alters the table to include new columns for the split components of OwnerAddress.
+
+
+ALTER TABLE project2.dbo.Dataset
+Add OwnerSplitAddress Nvarchar(255);
+
+-- Updating the new column with the extracted State
+-- This update sets the OwnerSplitAddress column with the separated State part.
+
+
+Update project2.dbo.Dataset
+SET OwnerSplitAddress = PARSENAME(REPLACE(OwnerAddress, ',', '.') , 3)
+
+-- Adding a new column for the split City
+-- This alters the table to include a new column called OwnerSplitCity.
+
+ALTER TABLE project2.dbo.Dataset
+Add OwnerSplitCity Nvarchar(255);
+
+-- Updating the new column with the extracted City
+-- This update sets the OwnerSplitCity column with the separated City part.
+
+Update project2.dbo.Dataset
+SET OwnerSplitCity = PARSENAME(REPLACE(OwnerAddress, ',', '.') , 2)
+
+-- Adding a new column for the split State
+-- This alters the table to include a new column called OwnerSplitState.
+
+
+ALTER TABLE project2.dbo.Dataset
+Add OwnerSplitState Nvarchar(255);
+
+-- Updating the new column with the extracted Address
+-- This update sets the OwnerSplitState column with the separated Address part.
+
+
+Update project2.dbo.Dataset
+SET OwnerSplitState = PARSENAME(REPLACE(OwnerAddress, ',', '.') , 1)
+
+
+
+Select *
+From project2.dbo.Dataset
+
+-------------------------------------------------------------------------------------------------------------------------------------------
