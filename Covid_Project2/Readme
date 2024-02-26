@@ -1,0 +1,15 @@
+Herd Immunity and COVID-19 Analysis
+Overview
+This repository contains SQL queries and data analysis scripts aimed at investigating the concept of herd immunity in the context of COVID-19. The analysis focuses on identifying the date when countries reached a vaccination threshold of approximately 70%, comparing this date with the occurrences of maximum new cases and maximum new deaths in those countries.
+
+SQL Scripts
+filter_countries.sql: Retrieves a list of countries from the COVID-19 dataset while excluding certain categories like income levels and regions.
+create_filtered_table.sql: Creates a new table containing filtered country data based on the criteria specified in filter_countries.sql.
+get_max_cases_and_deaths.sql: Retrieves the date of maximum new cases and maximum new deaths for each country, along with the date when herd immunity (approximately 70% vaccination rate) was achieved.
+Analysis Procedure
+Data Extraction: Initially, the dataset is filtered to include only individual countries, excluding regions and income levels.
+Table Creation: A new table is created with the filtered country data to facilitate further analysis.
+Identification of Herd Immunity Date: The script identifies the date when each country reached herd immunity, defined as approximately 70% of the population being fully vaccinated.
+Comparison with Max Cases and Deaths: For each country, the script retrieves the dates of maximum new cases and maximum new deaths, comparing them with the date of achieving herd immunity.
+Conclusion
+The analysis provides insights into the relationship between the achievement of herd immunity and the occurrences of maximum new cases and deaths in various countries. By examining these factors together, we gain a better understanding of the effectiveness of vaccination efforts in controlling the spread of COVID-19.
